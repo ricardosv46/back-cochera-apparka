@@ -63,3 +63,16 @@ class ResumenResponse(BaseModel):
     carros: Dict[str, int]
     motos: Dict[str, int]
     recaudacion_mensual_teorica: float
+
+
+class LoginRequest(BaseModel):
+    """Esquema para login."""
+    username: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    """Esquema de respuesta para login."""
+    message: str
+    state: bool
+    user: str

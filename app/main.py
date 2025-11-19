@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.models import Cochera
 from app.schemas import (
     VehiculoRequest, VehiculoResponse, PagoRequest,
-    DeudoresRequest, ResumenResponse
+    DeudoresRequest, ResumenResponse, LoginRequest, LoginResponse
 )
 
 # ==========================================
@@ -42,6 +42,21 @@ cochera = Cochera()
 def root():
     """Endpoint raíz de la API."""
     return {"message": "Sistema de Gestión de Cochera Apparkala API", "version": "1.0.0"}
+
+
+@app.post("/login", response_model=LoginResponse)
+def login(credentials: LoginRequest):
+    """Endpoint de autenticación. Usuario: admin, Contraseña: 12345678"""
+    if credentials.username == "admin" and credentials.password == "12345678":
+        return {
+            "message": "Login exitoso",
+            "state": True,
+            "user": credentials.username
+        }
+    raise HTTPException(
+        status_code=401,
+        detail="Credenciales inválidas. Usuario: admin, Contraseña: 12345678"
+    )
 
 
 @app.post("/vehiculos", response_model=VehiculoResponse, status_code=201)
