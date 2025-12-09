@@ -204,7 +204,7 @@ class Cochera:
 
     def buscar_por_placa(self, placa):
         """Busca un vehículo por placa y retorna el vehículo o None."""
-        tipo, indice, veh = self._buscar_vehiculo_por_placa(placa)
+        _, _, veh = self._buscar_vehiculo_por_placa(placa)
         return veh
 
     def registrar_pago(self, placa, mes, anio):
@@ -314,3 +314,271 @@ class Cochera:
     def obtener_historial(self):
         """Retorna el historial de movimientos."""
         return self.historial
+
+    # -------------------------------
+    #  MÉTODOS AUXILIARES PARA ORDENAMIENTO Y BÚSQUEDA
+    # -------------------------------
+    def _obtener_todos_los_vehiculos(self):
+        """Obtiene una lista con todos los vehículos (carros y motos)."""
+        vehiculos = []
+        for veh in self.casillas_carros:
+            if veh is not None:
+                vehiculos.append(veh)
+        for veh in self.casillas_motos:
+            if veh is not None:
+                vehiculos.append(veh)
+        return vehiculos
+
+    def _obtener_vehiculos_ordenados_por_placa(self):
+        """Obtiene todos los vehículos ordenados por placa usando inserción directa."""
+        vehiculos = self._obtener_todos_los_vehiculos()
+        if len(vehiculos) == 0:
+            return []
+        # Crear copia para no modificar la original
+        vehiculos_ordenados = vehiculos.copy()
+        # Ordenamiento por inserción directa
+        self._ordenar_por_insercion(vehiculos_ordenados, "placa")
+        return vehiculos_ordenados
+
+    # -------------------------------
+    #  MÉTODOS DE ORDENAMIENTO
+    # -------------------------------
+    def _ordenar_por_insercion(self, lista, campo="placa"):
+        """
+        Ordenamiento por inserción directa.
+        Ordena la lista in-place por el campo especificado (placa, dueno, etc.).
+        """
+        for i in range(1, len(lista)):
+            clave = lista[i]
+            valor_clave = getattr(clave, campo).upper() if hasattr(
+                getattr(clave, campo), 'upper') else getattr(clave, campo)
+            j = i - 1
+            while j >= 0:
+                valor_j = getattr(lista[j], campo).upper() if hasattr(
+                    getattr(lista[j], campo), 'upper') else getattr(lista[j], campo)
+                if valor_j > valor_clave:
+                    lista[j + 1] = lista[j]
+                    j -= 1
+                else:
+                    break
+            lista[j + 1] = clave
+
+    def _ordenar_por_seleccion(self, lista, campo="placa"):
+        """
+        Ordenamiento por selección directa.
+        Ordena la lista in-place seleccionando el menor elemento en cada iteración.
+        """
+        n = len(lista)
+        for i in range(n - 1):
+            indice_menor = i
+            valor_menor = getattr(lista[i], campo).upper() if hasattr(
+                getattr(lista[i], campo), 'upper') else getattr(lista[i], campo)
+            for j in range(i + 1, n):
+                valor_j = getattr(lista[j], campo).upper() if hasattr(
+                    getattr(lista[j], campo), 'upper') else getattr(lista[j], campo)
+                if valor_j < valor_menor:
+                    indice_menor = j
+                    valor_menor = valor_j
+            # Intercambiar
+            if indice_menor != i:
+                lista[i], lista[indice_menor] = lista[indice_menor], lista[i]
+
+    def _ordenar_por_burbuja(self, lista, campo="placa"):
+        """
+        Ordenamiento por burbuja (intercambio directo).
+        Ordena la lista in-place comparando e intercambiando elementos adyacentes.
+        """
+        n = len(lista)
+        for i in range(n - 1):
+            intercambio = False
+            for j in range(n - 1 - i):
+                valor_j = getattr(lista[j], campo).upper() if hasattr(
+                    getattr(lista[j], campo), 'upper') else getattr(lista[j], campo)
+                valor_j1 = getattr(lista[j + 1], campo).upper() if hasattr(
+                    getattr(lista[j + 1], campo), 'upper') else getattr(lista[j + 1], campo)
+                if valor_j > valor_j1:
+                    lista[j], lista[j + 1] = lista[j + 1], lista[j]
+                    intercambio = True
+            # Optimización: si no hubo intercambios, la lista ya está ordenada
+            if not intercambio:
+                break
+
+    def _quicksort(self, lista, campo="placa", inicio=0, fin=None):
+        """
+        Ordenamiento Quicksort (método logarítmico).
+        Ordena la lista in-place usando el algoritmo de divide y vencerás.
+        """
+        if fin is None:
+            fin = len(lista) - 1
+        if inicio < fin:
+            # Particionar y obtener el índice del pivote
+            pivote_indice = self._particionar(lista, campo, inicio, fin)
+            # Ordenar recursivamente las dos mitades
+            self._quicksort(lista, campo, inicio, pivote_indice - 1)
+            self._quicksort(lista, campo, pivote_indice + 1, fin)
+
+    def _particionar(self, lista, campo, inicio, fin):
+        """Función auxiliar para Quicksort: particiona la lista alrededor de un pivote."""
+        pivote_valor = getattr(lista[fin], campo).upper() if hasattr(
+            getattr(lista[fin], campo), 'upper') else getattr(lista[fin], campo)
+        i = inicio - 1
+        for j in range(inicio, fin):
+            valor_j = getattr(lista[j], campo).upper() if hasattr(
+                getattr(lista[j], campo), 'upper') else getattr(lista[j], campo)
+            if valor_j <= pivote_valor:
+                i += 1
+                lista[i], lista[j] = lista[j], lista[i]
+        lista[i + 1], lista[fin] = lista[fin], lista[i + 1]
+        return i + 1
+
+    def ordenar_vehiculos_por_placa(self, metodo="insercion"):
+        """
+        Ordena todos los vehículos por placa usando el método especificado.
+        Métodos disponibles: 'insercion', 'seleccion', 'burbuja', 'quicksort'
+        Retorna una lista ordenada de vehículos.
+        """
+        vehiculos = self._obtener_todos_los_vehiculos()
+        if len(vehiculos) == 0:
+            return []
+
+        vehiculos_ordenados = vehiculos.copy()
+
+        if metodo == "insercion":
+            self._ordenar_por_insercion(vehiculos_ordenados, "placa")
+        elif metodo == "seleccion":
+            self._ordenar_por_seleccion(vehiculos_ordenados, "placa")
+        elif metodo == "burbuja":
+            self._ordenar_por_burbuja(vehiculos_ordenados, "placa")
+        elif metodo == "quicksort":
+            self._quicksort(vehiculos_ordenados, "placa")
+        else:
+            raise ValueError(
+                f"Método de ordenamiento '{metodo}' no reconocido")
+
+        return vehiculos_ordenados
+
+    def ordenar_vehiculos_por_dueno(self, metodo="insercion"):
+        """
+        Ordena todos los vehículos por dueño usando el método especificado.
+        Retorna una lista ordenada de vehículos.
+        """
+        vehiculos = self._obtener_todos_los_vehiculos()
+        if len(vehiculos) == 0:
+            return []
+
+        vehiculos_ordenados = vehiculos.copy()
+
+        if metodo == "insercion":
+            self._ordenar_por_insercion(vehiculos_ordenados, "dueno")
+        elif metodo == "seleccion":
+            self._ordenar_por_seleccion(vehiculos_ordenados, "dueno")
+        elif metodo == "burbuja":
+            self._ordenar_por_burbuja(vehiculos_ordenados, "dueno")
+        elif metodo == "quicksort":
+            self._quicksort(vehiculos_ordenados, "dueno")
+        else:
+            raise ValueError(
+                f"Método de ordenamiento '{metodo}' no reconocido")
+
+        return vehiculos_ordenados
+
+    # -------------------------------
+    #  MÉTODOS DE BÚSQUEDA
+    # -------------------------------
+    def buscar_por_placa_secuencial_ordenada(self, placa):
+        """
+        Búsqueda secuencial en lista ordenada.
+        Requiere que los datos estén ordenados por placa.
+        Se detiene tempranamente si encuentra un elemento mayor.
+        Retorna el vehículo encontrado o None.
+        """
+        vehiculos_ordenados = self._obtener_vehiculos_ordenados_por_placa()
+        placa_upper = placa.upper()
+
+        for veh in vehiculos_ordenados:
+            if veh.placa.upper() == placa_upper:
+                return veh
+            elif veh.placa.upper() > placa_upper:
+                # Parada temprana: si la placa actual es mayor, no seguirá encontrándose
+                break
+        return None
+
+    def buscar_por_placa_binaria(self, placa):
+        """
+        Búsqueda binaria (requiere datos ordenados).
+        Divide repetidamente el conjunto de datos a la mitad hasta encontrar el valor.
+        Retorna el vehículo encontrado o None.
+        """
+        vehiculos_ordenados = self._obtener_vehiculos_ordenados_por_placa()
+        if len(vehiculos_ordenados) == 0:
+            return None
+
+        placa_upper = placa.upper()
+        izquierda = 0
+        derecha = len(vehiculos_ordenados) - 1
+
+        while izquierda <= derecha:
+            medio = (izquierda + derecha) // 2
+            placa_medio = vehiculos_ordenados[medio].placa.upper()
+
+            if placa_medio == placa_upper:
+                return vehiculos_ordenados[medio]
+            elif placa_medio < placa_upper:
+                izquierda = medio + 1
+            else:
+                derecha = medio - 1
+
+        return None
+
+    def buscar_por_placa_indexada(self, placa):
+        """
+        Búsqueda secuencial indexada (simulada).
+        Crea un índice simple por primera letra de la placa para acelerar la búsqueda.
+        Retorna el vehículo encontrado o None.
+        """
+        vehiculos = self._obtener_todos_los_vehiculos()
+        placa_upper = placa.upper()
+
+        # Crear índice simple por primera letra
+        indice = {}
+        for veh in vehiculos:
+            primera_letra = veh.placa[0].upper() if veh.placa else ""
+            if primera_letra not in indice:
+                indice[primera_letra] = []
+            indice[primera_letra].append(veh)
+
+        # Buscar en el grupo correspondiente
+        primera_letra_buscada = placa_upper[0] if placa_upper else ""
+        if primera_letra_buscada in indice:
+            for veh in indice[primera_letra_buscada]:
+                if veh.placa.upper() == placa_upper:
+                    return veh
+
+        return None
+
+    def obtener_vehiculos_ordenados(self, campo="placa", metodo="insercion"):
+        """
+        Obtiene todos los vehículos ordenados por el campo especificado.
+        Campos disponibles: 'placa', 'dueno', 'marca', 'modelo', etc.
+        Métodos: 'insercion', 'seleccion', 'burbuja', 'quicksort'
+        Retorna lista de diccionarios con la información de los vehículos.
+        """
+        vehiculos = self._obtener_todos_los_vehiculos()
+        if len(vehiculos) == 0:
+            return []
+
+        vehiculos_ordenados = vehiculos.copy()
+
+        if metodo == "insercion":
+            self._ordenar_por_insercion(vehiculos_ordenados, campo)
+        elif metodo == "seleccion":
+            self._ordenar_por_seleccion(vehiculos_ordenados, campo)
+        elif metodo == "burbuja":
+            self._ordenar_por_burbuja(vehiculos_ordenados, campo)
+        elif metodo == "quicksort":
+            self._quicksort(vehiculos_ordenados, campo)
+        else:
+            raise ValueError(
+                f"Método de ordenamiento '{metodo}' no reconocido")
+
+        return [veh.to_dict() for veh in vehiculos_ordenados]
